@@ -61,18 +61,18 @@ trait Parsers[ParseError, Parser[+ _]] {
 
 ### Adding 
 
-`def string(s: String): Parser[String]` with rule `run(string(s))(s) == Right(s)`
-`def or[A](s1: Parser[A], s2: Parser[A]): Parser[A]` with rule `or(string("abra"),string("cadabra"))`
-`def listOfN[A](n: Int, p: Parser[A]): Parser[List[A]]` with rules `run(listOfN(3, "ab" | "cad"))("ababcad") == Right("ababcad")` `run(listOfN(3, "ab" | "cad"))("cadabab") == Right("cadabab")` `run(listOfN(3, "ab" | "cad"))("ababab") == Right("ababab")`
+- `def string(s: String): Parser[String]` with rule `run(string(s))(s) == Right(s)`
+- `def or[A](s1: Parser[A], s2: Parser[A]): Parser[A]` with rule `or(string("abra"),string("cadabra"))`
+- `def listOfN[A](n: Int, p: Parser[A]): Parser[List[A]]` with rules `run(listOfN(3, "ab" | "cad"))("ababcad") == Right("ababcad")` `run(listOfN(3, "ab" | "cad"))("cadabab") == Right("cadabab")` `run(listOfN(3, "ab" | "cad"))("ababab") == Right("ababab")`
  
 ### Possible algebra
-`def many[A](p: Parser[A]): Parser[List[A]]`
-`def map[A,B](a: Parser[A])(f: A => B): Parser[B]`
+- `def many[A](p: Parser[A]): Parser[List[A]]`
+- `def map[A,B](a: Parser[A])(f: A => B): Parser[B]`
 * implement char in terms of string
 * And similarly another combinator, succeed `def succeed[A](a: A): Parser[A]`, can be defined in terms of string and map the rule is `run(succeed(a))(s) == Right(a)`
-`def slice[A](p: Parser[A]): Parser[String]`
-`def many1[A](p: Parser[A]): Parser[List[A]]`
-`def product[A,B](p: Parser[A], p2: Parser[B]): Parser[(A,B)]` 
+- `def slice[A](p: Parser[A]): Parser[String]`
+- `def many1[A](p: Parser[A]): Parser[List[A]]`
+- `def product[A,B](p: Parser[A], p2: Parser[B]): Parser[(A,B)]` 
 * add `**` and `product` ad infix ops
 * Use product to implement the combinator map2 `def map2[A,B,C](p: Parser[A], p2: Parser[B])(f: (A,B) => C): Parser[C]`
 * Define many in terms of `or` , `map2` , and `succeed`
@@ -83,8 +83,8 @@ Suppose we want to parse a single digit, like '4' , followed by that many 'a' ch
 Examples of valid input are "0" , "1a" , "2aa" , "4aaaa" , and so on. This is an example of a context sensitive grammar.
 It can’t be expressed with product because our choice of the second parser depends on the result of the first (the second parser depends on its context).
 
-`def flatMap[A,B](p: Parser[A])(f: A => Parser[B]): Parser[B]`
-`implicit def regex(r: Regex): Parser[String]`
+- `def flatMap[A,B](p: Parser[A])(f: A => Parser[B]): Parser[B]`
+- `implicit def regex(r: Regex): Parser[String]`
 
 * Implement `product` and `map2` in terms of `flatMap`.
 * Map is no longer primitive. Express it in terms of flatMap and/or other combinators.
