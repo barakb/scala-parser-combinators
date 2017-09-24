@@ -6,5 +6,4 @@ package com.gigaspaces
   */
 object Main extends App{
 
-
 }
