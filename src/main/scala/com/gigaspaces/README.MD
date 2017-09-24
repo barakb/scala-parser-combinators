@@ -61,9 +61,12 @@ trait Parsers[ParseError, Parser[+ _]] {
 
 ### Adding 
 
-- `def string(s: String): Parser[String]` with rule `run(string(s))(s) == Right(s)`
-- `def or[A](s1: Parser[A], s2: Parser[A]): Parser[A]` with rule `or(string("abra"),string("cadabra"))`
-- `def listOfN[A](n: Int, p: Parser[A]): Parser[List[A]]` with rules `run(listOfN(3, "ab" | "cad"))("ababcad") == Right("ababcad")` `run(listOfN(3, "ab" | "cad"))("cadabab") == Right("cadabab")` `run(listOfN(3, "ab" | "cad"))("ababab") == Right("ababab")`
+- `def string(s: String): Parser[String]`
+   with rule `run(string(s))(s) == Right(s)`
+- `def or[A](s1: Parser[A], s2: Parser[A]): Parser[A]` 
+   with rule `or(string("abra"),string("cadabra"))`
+- `def listOfN[A](n: Int, p: Parser[A]): Parser[List[A]]` 
+   with rules `run(listOfN(3, "ab" | "cad"))("ababcad") == Right("ababcad")` `run(listOfN(3, "ab" | "cad"))("cadabab") == Right("cadabab")` `run(listOfN(3, "ab" | "cad"))("ababab") == Right("ababab")`
  
 ### Possible algebra
 - `def many[A](p: Parser[A]): Parser[List[A]]`
