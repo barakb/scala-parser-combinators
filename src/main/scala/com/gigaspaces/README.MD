@@ -7,6 +7,7 @@ We will represent JSON structure using:
 ````Scala
 
 trait JSON
+
 object JSON {
   case object JNull extends JSON
   case class JNumber(get: Double) extends JSON
@@ -21,7 +22,7 @@ object JSON {
 ### Parser, Char and run
 * def char(c: Char): Parser[Char]
 * def run[A](p: Parser[A])(input: String): Either[ParseError,A]
-* rule: `run(char(c))(c.toString) == Right(c)`
+    * rule: `run(char(c))(c.toString) == Right(c)`
 
 
 ### Implement combinators first
@@ -61,18 +62,22 @@ trait Parsers[ParseError, Parser[+ _]] {
 
 ### Adding 
 
-- `def string(s: String): Parser[String]`
-   with rule `run(string(s))(s) == Right(s)`
-- `def or[A](s1: Parser[A], s2: Parser[A]): Parser[A]` 
-   with rule `or(string("abra"),string("cadabra"))`
+- `def string(s: String): Parser[String]`. 
+   - with rule `run(string(s))(s) == Right(s)` 
+- `def or[A](s1: Parser[A], s2: Parser[A]): Parser[A]`  
+   - with rule `or(string("abra"),string("cadabra"))`
 - `def listOfN[A](n: Int, p: Parser[A]): Parser[List[A]]` 
-   with rules `run(listOfN(3, "ab" | "cad"))("ababcad") == Right("ababcad")` `run(listOfN(3, "ab" | "cad"))("cadabab") == Right("cadabab")` `run(listOfN(3, "ab" | "cad"))("ababab") == Right("ababab")`
+   with rules:
+    - `run(listOfN(3, "ab" | "cad"))("ababcad") == Right("ababcad")` 
+    - `run(listOfN(3, "ab" | "cad"))("cadabab") == Right("cadabab")` 
+    - `run(listOfN(3, "ab" | "cad"))("ababab") == Right("ababab")`
  
 ### Possible algebra
 - `def many[A](p: Parser[A]): Parser[List[A]]`
 - `def map[A,B](a: Parser[A])(f: A => B): Parser[B]`
 * implement char in terms of string
-* And similarly another combinator, succeed `def succeed[A](a: A): Parser[A]`, can be defined in terms of string and map the rule is `run(succeed(a))(s) == Right(a)`
+* And similarly another combinator, succeed `def succeed[A](a: A): Parser[A]`, can be defined in terms of string and map the rule is
+    * `run(succeed(a))(s) == Right(a)`
 - `def slice[A](p: Parser[A]): Parser[String]`
 - `def many1[A](p: Parser[A]): Parser[List[A]]`
 - `def product[A,B](p: Parser[A], p2: Parser[B]): Parser[(A,B)]` 
@@ -95,10 +100,10 @@ It can’t be expressed with product because our choice of the second parser dep
 
 
 ### Primitives 
- 1. string(s) : Recognizes and returns a single String
- 2. regex(s) : Recognizes a regular expression s
- 3. slice(p) : Returns the portion of input inspected by p if successful
- 4. succeed(a) : Always succeeds with the value a
- 5. flatMap(p)(f) : Runs a parser, then uses its result to select a second parser to run in sequence
- 6. or(p1,p2) : Chooses between two parsers, first attempting p1 , and then p2 if p1
+ 1. **string(s)** : Recognizes and returns a single String
+ 2. **regex(s)** : Recognizes a regular expression s
+ 3. **slice(p)** : Returns the portion of input inspected by p if successful
+ 4. **succeed(a)** : Always succeeds with the value a
+ 5. **flatMap(p)(f)** : Runs a parser, then uses its result to select a second parser to run in sequence
+ 6. **or(p1,p2)** : Chooses between two parsers, first attempting p1 , and then p2 if p1
   fails
