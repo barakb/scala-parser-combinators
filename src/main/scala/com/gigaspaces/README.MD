@@ -107,3 +107,102 @@ It can’t be expressed with product because our choice of the second parser dep
  5. **flatMap(p)(f)** : Runs a parser, then uses its result to select a second parser to run in sequence
  6. **or(p1,p2)** : Chooses between two parsers, first attempting p1 , and then p2 if p1
   fails
+
+### Implementing the parser
+ 1. Leftover from last lecture add those functions to ParserOps
+    * many
+    * many1
+    * slice
+    * map2
+    * listOfN
+    * flatMap
+
+ 1. Add `Location` and `ParseError` case classes to Parsers.scala
+ 2. Remove the [ParseError] from the parsers
+
+ 3. Using `label` to control the error message
+    * Rule label(msg)(fail) == Left(e),  errorMessage(e) == msg
+ 4. Nesting error messages, what error message do we expect from p on this input ?
+ 
+    ````Scala
+    val p = label("first magic word")("abra") **
+    " ".many **
+    label("second magic word")("cadabra")
+
+    run(p)("abra cAdabra")
+   
+    ````
+ 5. Add method `scope` to control nested error message.
+ 6. Update ParseError to hold nested error messages and locations.    
+ 7. Add the helper method `errorMessage` and `errorLocation`
+
+ 8. Controlling branching and backtracking, What ParseError would we like to get back from `run(p)("abra cAdabra")`
+ 
+      ````Scala
+      val spaces = " ".many
+      val p1 = scope("magic spell") {
+         "abra" ** spaces ** "cadabra"
+      }
+      val p2 = scope("gibberish") {
+         "abba" ** spaces ** "babba"
+      }
+      val p = p1 or p2
+      ````
+
+      Parser p1 consumed part of the input and thus we should commit to p1 unless explicit required not to.
+ 9. Add `def attempt[A](p: Parser[A]): Parser[A]` with the rule `attempt(p flatMap (_ => fail)) or p2 == p2`              
+    Example:
+       run the input `"abra cadabra!"` on this parser
+       
+       ````Scala
+        (attempt("abra" ** spaces ** "abra") ** "cadabra") 
+        or 
+        ("abra" ** spaces "cadabra!")
+    
+  
+       ````
+ 10. create class ParserImpl 
+ 
+     ````Scala
+     object ParserTypesImpl{
+       type Parser[+A] = String => Either[ParseError,A]
+     }
+     
+     object ParserImpl extends Parsers[Parser]{
+     
+     }
+     ````
+ 10. define JSON.scala
+     Start with this:
+     
+     ````Scala
+     trait JSON
+     
+     object JSON {
+     
+       case object JNull extends JSON
+     
+       case class JNumber(get: Double) extends JSON
+     
+       case class JString(get: String) extends JSON
+     
+       case class JBool(get: Boolean) extends JSON
+     
+       case class JArray(get: IndexedSeq[JSON]) extends JSON
+     
+       case class JObject(get: Map[String, JSON]) extends JSON
+     
+       def jsonParser[Parser[+ _]](P: Parsers[Parser]): Parser[JSON] = {
+         import P._
+         val spaces: Parser[String] = char(' ').many.slice
+     
+         val p = label("first magic word")("abra") **
+           spaces **
+           label("second magic word")("cadabra")
+     
+     
+         succeed(JNull) //todo fixme
+       }
+     }
+     ````
+     
