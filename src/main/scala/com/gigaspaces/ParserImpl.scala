@@ -2,6 +2,7 @@ package com.gigaspaces
 
 import com.gigaspaces.ParserTypesImpl._
 
+import scala.annotation.tailrec
 import scala.util.matching.Regex
 
 /**
@@ -49,7 +50,7 @@ object ParserTypesImpl {
 
 object ParserImpl extends Parsers[Parser] {
 
-  override implicit def string(s: String): Parser[String] =
+  override def string(s: String): Parser[String] =
     location => if (location.input.startsWith(s))
       Success(s, s.length)
     else
@@ -64,11 +65,12 @@ object ParserImpl extends Parsers[Parser] {
       case None => Failure(location.toError("Failed to parse regexp: " + r), isCommited = false)
     }
 
-  override def or[A](p1: Parser[A], p2: => Parser[A]): Parser[A] =
-    location => p1(location) match {
-      case Failure(_, false) => p2(location)
-      case a@_ => a
-    }
+
+  override def or[A, B >: A](p1: Parser[A], p2: => Parser[B]): Parser[B] =
+  location => p1(location) match {
+    case Failure(_, false) => p2(location)
+    case a@_ => a
+  }
 
   override def flatMap[A, B](p: Parser[A])(f: (A) => Parser[B]): Parser[B] =
     location => p(location) match {
@@ -78,7 +80,7 @@ object ParserImpl extends Parsers[Parser] {
 
   override def slice[A](p: Parser[A]): Parser[String] =
     location => p(location) match {
-      case Success(_, consumed) => Success(location.input.substring(0, consumed), consumed)
+      case Success(_, consumed) => Success(location.slice(consumed), consumed)
       case f@Failure(_, _) => f
     }
 
@@ -92,4 +94,19 @@ object ParserImpl extends Parsers[Parser] {
   override def succeed[A](a: A): Parser[A] = _ => Success(a, 0)
 
   override def fail[A]: Parser[A] = location => Failure(location.toError("fail"), isCommited = false)
+
+  // a tail rec implementation of many
+  override def many[A](p: Parser[A]): Parser[List[A]] =
+    s => {
+      val buf = new collection.mutable.ListBuffer[A]
+      @tailrec
+      def go(p: Parser[A], offset: Int): Result[List[A]] = {
+        p(s.advanceBy(offset)) match {
+          case Success(a,n) => buf += a; go(p, offset+n)
+          case f@Failure(_,true) => f
+          case Failure(_,_) => Success(buf.toList,offset)
+        }
+      }
+      go(p, 0)
+    }
 }

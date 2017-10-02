@@ -1,6 +1,5 @@
 package com.gigaspaces
 
-
 /**
   * Created by Barak Bar Orion
   * on 9/27/17.
@@ -9,6 +8,7 @@ package com.gigaspaces
 trait JSON
 
 object JSON {
+
   case object JNull extends JSON
 
   case class JNumber(get: Double) extends JSON
@@ -23,20 +23,32 @@ object JSON {
 
   def jsonParser[Parser[+ _]](P: Parsers[Parser]): Parser[JSON] = {
     import P._
+    implicit def tok(s: String): Parser[String] = token(P.string(s))
 
-    val spaces: Parser[String] = char(' ').many.slice
+    def array: Parser[JArray] = surround("[", "]")(
+      value sep "," map (vs => JArray(vs.toIndexedSeq))) scope "array"
 
-    val p = label("first magic word")("abra") **
-      spaces **
-      label("second magic word")("cadabra")
+    def obj = surround("{", "}")(
+      keyval sep "," map (kvs => JObject(kvs.toMap))) scope "object"
 
-    val number: Parser[JSON] = doubleString map (s => JNumber(s.toDouble))
+    def keyval = escapedQuoted ** (":" *> value)
 
-    number or succeed(JNull) //todo fixme !
+    def lit = scope("literal") {
+      "null".as(JNull) |
+        double.map(JNumber) |
+        escapedQuoted.map(JString) |
+        "true".as(JBool(true)) |
+        "false".as(JBool(false))
+    }
+
+    def value: Parser[JSON] = lit | obj | array
+
+    root(whitespace *> (obj | array))
   }
 }
 
 object JSONExample extends App {
+
   val jsonTxt =
     """
       {
@@ -48,8 +60,10 @@ object JSONExample extends App {
       }
     """
   val P = ParserImpl
+
   import ParserTypesImpl.Parser
+
   val json: Parser[JSON] = JSON.jsonParser(P)
-  println(P.run(json)("1.2"))
+  println(P.run(json)(jsonTxt))
 }
 
