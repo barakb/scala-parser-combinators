@@ -64,7 +64,7 @@ object ParserImpl extends Parsers[Parser] {
       case None => Failure(location.toError("Failed to parse regexp: " + r), isCommited = false)
     }
 
-  override def or[A](p1: Parser[A], p2: => Parser[A]): Parser[A] =
+  override def or[A, B >: A](p1: Parser[A], p2: => Parser[B]): Parser[B] =
     location => p1(location) match {
       case Failure(_, false) => p2(location)
       case a@_ => a
