@@ -24,13 +24,13 @@ object JSON {
   def jsonParser[Parser[+ _]](P: Parsers[Parser]): Parser[JSON] = {
     import P._
 
-    val spaces: Parser[String] = char(' ').many.slice
+    def whitespace: Parser[String] = "\\s*".r
 
     val p = label("first magic word")("abra") **
-      spaces **
+      whitespace **
       label("second magic word")("cadabra")
 
-    val number: Parser[JSON] = doubleString map (s => JNumber(s.toDouble))
+    def number: Parser[JSON] = doubleString map (s => JNumber(s.toDouble))
 
     number or succeed(JNull) //todo fixme !
   }

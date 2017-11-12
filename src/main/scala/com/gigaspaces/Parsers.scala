@@ -68,6 +68,20 @@ trait Parsers[Parser[+ _]] {
     token(regex("[-+]?([0-9]*\\.)?[0-9]+([eE][-+]?[0-9]+)?".r)).slice
   }
 
+  def skipL[A](p: Parser[Any], p2: => Parser[A]): Parser[A] =
+    map2(slice(p), p2)((_, a) => a)
+
+  def skipR[A](p: => Parser[A], p2: Parser[Any]): Parser[A] =
+    map2(p, slice(p2))((a, _) => a)
+
+  def surround[A](start: Parser[Any], stop:Parser[Any])(p: => Parser[A]): Parser[A] =
+    start *> p <* stop
+
+  def sep[A](p: Parser[A], p1: Parser[Any]): Parser[List[A]] =
+    sep1(p, p1) or succeed(List())
+
+  def sep1[A](p: Parser[A], p1: Parser[Any]): Parser[List[A]] =
+    map2(p, many(p1 *> p))(_::_)
 
   case class ParserOps[A](p: Parser[A]) {
     def or[B >: A](p2: => Parser[B]): Parser[B] = parsers.or(p, p2)
@@ -97,11 +111,16 @@ trait Parsers[Parser[+ _]] {
     def label(msg: String): Parser[A] = parsers.label(msg)(p)
 
     def scope(msg: String): Parser[A] = parsers.scope(msg)(p)
+
+    def <*[B](p2: Parser[Any]): Parser[A] = parsers.skipR(p, p2)
+    def *>[B](p2: Parser[B]): Parser[B] = parsers.skipL(p, p2)
+
   }
 
 }
 
 case class Location(in: String, offset: Int = 0) {
+
   lazy val line: Int = in.slice(0, offset + 1).count(_ == '\n') + 1
   lazy val col: Int = in.slice(0, offset + 1).lastIndexOf('\n') match {
     case -1 => offset + 1
@@ -119,6 +138,10 @@ case class Location(in: String, offset: Int = 0) {
 
   def input: String = in.substring(offset)
 
+  def slice(consumed: Int): String = input.substring(0, consumed)
+
+  def columnCaret: String = (" " * (col - 1)) + "^"
+
 }
 
 case class ParseError(stack: List[(Location, String)] = List()) {
@@ -134,7 +157,27 @@ case class ParseError(stack: List[(Location, String)] = List()) {
   def latestLoc: Option[Location] =
     latest map (_._1)
 
-  override def toString: String = ??? //home work
+
+  override def toString: String =
+    if (stack.isEmpty) "no error message"
+    else {
+      val collapsed = collapseStack(stack)
+      val context =
+        collapsed.lastOption.map("\n\n" + _._1.currentLine).getOrElse("") +
+          collapsed.lastOption.map("\n" + _._1.columnCaret).getOrElse("")
+      collapsed.map { case (loc, msg) => loc.line.toString + "." + loc.col + " " + msg }.mkString("\n") +
+        context
+    }
+
+  /* Builds a collapsed version of the given error stack -
+   * messages at the same location have their messages merged,
+   * separated by semicolons */
+  def collapseStack(s: List[(Location, String)]): List[(Location, String)] =
+    s.groupBy(_._1).
+      mapValues(_.map(_._2).mkString("; ")).
+      toList.sortBy(_._1.offset)
+
+  def formatLoc(l: Location): String = l.line + "." + l.col
 }
 
 
