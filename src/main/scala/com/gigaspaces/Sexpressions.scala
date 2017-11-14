@@ -14,10 +14,11 @@ list: '(' sexpr* ')'
 
 atom: ID
     | DOUBLE
-    | INTEGER
     | STRING
+    | BOOLEAN #t #f
     ;
  */
+
 
 //noinspection SpellCheckingInspection
 object Sexpressions{
@@ -39,10 +40,10 @@ object Sexpressions{
 
     def sDouble: Parser[Sexpressions] = doubleString map (s => SDouble(s.toDouble))
     def sString: Parser[Sexpressions] = surround(string("\""), string("\""))(regex("[^\"]*".r).slice) map SString
-    def sBool: Parser[Sexpressions] = string("#t") map(_ => SBool(true)) or string("#f") map(_ => SBool(false))
+    def sBool: Parser[Sexpressions] = (string("#t") map(_ => SBool(true))) or (string("#f") map(_ => SBool(false)))
     def sId: Parser[Sexpressions] = regex("[a-zA-Z\\+\\-\\*\\=][^\\s\\)\\(]*".r).slice map SID
 
-    def sList: Parser[Sexpressions] = (string("(") *>  sep(value, whitespace) <* string(")")) map SList
+    def sList: Parser[Sexpressions] = (string("(") *>  seq(value, whitespace) <* string(")")) map SList
 
     def value: Parser[Sexpressions] =  sDouble or sString or sBool or sId or sList
 

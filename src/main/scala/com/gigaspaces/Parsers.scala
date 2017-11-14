@@ -8,8 +8,7 @@ import scala.util.matching.Regex
   * on 9/18/17.
   */
 
-
-trait Parsers[Parser[+ _]] {
+trait Parsers[Parser[+_]] {
   parsers =>
   // run(char(c))(c.toString) == Right(c)
   implicit def char(c: Char): Parser[Char] = string(c.toString) map (_.charAt(0))
@@ -77,10 +76,10 @@ trait Parsers[Parser[+ _]] {
   def surround[A](start: Parser[Any], stop:Parser[Any])(p: => Parser[A]): Parser[A] =
     start *> p <* stop
 
-  def sep[A](p: Parser[A], p1: Parser[Any]): Parser[List[A]] =
-    sep1(p, p1) or succeed(List())
+  def seq[A](p: Parser[A], p1: Parser[Any]): Parser[List[A]] =
+    seq1(p, p1) or succeed(List())
 
-  def sep1[A](p: Parser[A], p1: Parser[Any]): Parser[List[A]] =
+  def seq1[A](p: Parser[A], p1: Parser[Any]): Parser[List[A]] =
     map2(p, many(p1 *> p))(_::_)
 
   case class ParserOps[A](p: Parser[A]) {
